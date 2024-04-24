@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 env:
-  IMAGE_NAME: TradingApp
+  IMAGE_NAME: tradingapp
 
 jobs:
   build:
