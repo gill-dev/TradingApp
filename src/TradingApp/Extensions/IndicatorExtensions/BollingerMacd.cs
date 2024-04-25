@@ -12,8 +12,7 @@ namespace TradingApp.Extensions.IndicatorExtensions
             var bollingerBands = candles.CalcBollingerBands(bbWindow, stdDev);
             var macdResults = candles.CalcMacd().ToArray();
             var prices = candles.Select(c => c.Mid_C).ToArray();
-
-            var emaResult = prices.CalcEma(emaWindow).ToArray();
+            var emaResult = prices.CalcEma(emaWindow).ToArray(); 
 
             var length = candles.Length;
             var result = new IndicatorResult[length];
@@ -37,10 +36,10 @@ namespace TradingApp.Extensions.IndicatorExtensions
 
                 result[i].Gain = Math.Abs(candles[i].Mid_C - currentEma);
 
-                result[i].Signal = direction switch
+                result[i].Signal = (candles[i], direction) switch
                 {
-                    1 when candles[i].Mid_L > currentEma && candles[i].Mid_C > currentBollinger.LowerBand && candles[i].Spread <= maxSpread && result[i].Gain >= minGain => Signal.Buy,
-                    -1 when candles[i].Mid_H < currentEma && candles[i].Mid_C < currentBollinger.UpperBand && candles[i].Spread <= maxSpread && result[i].Gain >= minGain => Signal.Sell,
+                    (var candle, 1) when candle.Mid_L > currentEma && candle.Mid_C > currentBollinger.LowerBand && candle.Spread <= maxSpread && result[i].Gain >= minGain => Signal.Buy,
+                    (var candle, -1) when candle.Mid_H < currentEma && candle.Mid_C < currentBollinger.UpperBand && candle.Spread <= maxSpread && result[i].Gain >= minGain => Signal.Sell,
                     _ => Signal.None
                 };
 
@@ -51,6 +50,7 @@ namespace TradingApp.Extensions.IndicatorExtensions
 
             return result;
         }
+
 
 
     }

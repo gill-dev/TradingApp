@@ -65,7 +65,11 @@ public static class NumericExtensions
 
         if (length <= window)
         {
-            yield return 0.0;
+            var average = sequence.Take(length).Average();
+            for (int i = 0; i < length; i++)
+            {
+                yield return average;
+            }
         }
 
         var alpha = 2.0 / (window + 1);
