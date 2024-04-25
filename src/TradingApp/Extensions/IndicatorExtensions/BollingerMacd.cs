@@ -38,8 +38,8 @@ namespace TradingApp.Extensions.IndicatorExtensions
 
                 result[i].Signal = (candles[i], direction) switch
                 {
-                    (var candle, 1) when candle.Mid_L > currentEma && candle.Mid_C > currentBollinger.LowerBand && candle.Spread <= maxSpread && result[i].Gain >= minGain => Signal.Buy,
-                    (var candle, -1) when candle.Mid_H < currentEma && candle.Mid_C < currentBollinger.UpperBand && candle.Spread <= maxSpread && result[i].Gain >= minGain => Signal.Sell,
+                    (var candle, 1) when candle.Mid_L > currentEma && candle.Mid_C < currentBollinger.LowerBand && candle.Spread <= maxSpread && result[i].Gain >= minGain => Signal.Buy,
+                    (var candle, -1) when candle.Mid_H < currentEma && candle.Mid_C > currentBollinger.UpperBand && candle.Spread <= maxSpread && result[i].Gain >= minGain => Signal.Sell,
                     _ => Signal.None
                 };
 
