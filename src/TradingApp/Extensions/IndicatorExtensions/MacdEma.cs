@@ -6,7 +6,7 @@ namespace TradingApp.Extensions.IndicatorExtensions;
 
 public static partial class Indicator
 {
-    public static IndicatorResult[] CalcMacdEma(this Candle[] candles, int emaWindow = 9, double maxSpread = 0.0004, double minGain = 0.0006, double riskReward = 1.5)
+    public static IndicatorResult[] CalcMacdEma(this Candle[] candles, int emaWindow = 100, double maxSpread = 0.0004, double minGain = 0.0006, double riskReward = 1.5)
     {
         var macd = candles.CalcMacd();
 
