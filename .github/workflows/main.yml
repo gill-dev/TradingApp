@@ -1,4 +1,4 @@
-name: Build and Deploy to EC2
+name: Docker Image CI
 
 on:
   push:
@@ -6,11 +6,14 @@ on:
   pull_request:
     branches: [ "main" ]
 
+env:
+  IMAGE_NAME: tradingapp
+
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: App Settings Variable Substitution
       uses: microsoft/variable-substitution@v1
@@ -21,22 +24,14 @@ jobs:
         Constants.AccountId: ${{ secrets.OANDAACCOUNTID }}
         EmailConfiguration.Password: ${{ secrets.EMAILPASSWORD }}
 
-    - name: Configure AWS Credentials from OIDC
-      uses: aws-actions/configure-aws-credentials@v1
+    - name: Build and Push Docker Image
+      uses: mr-smithers-excellent/docker-build-push@v6
       with:
-        aws-region: eu-west-1  
-        role-to-assume: arn:aws:iam::590183753897:role/ecr-access  
-        role-session-name: GitHubActions
-
-    - name: Login to Amazon ECR
-      uses: aws-actions/amazon-ecr-login@v1
-
-
-    - name: Build, tag, and push image to Amazon ECR
-      run: |
-        echo "Using ECR Registry URL: ${{ steps.login-ecr.outputs.registry }}"
-        docker build -t ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:1.0.0 -f ./src/TradingApp/Dockerfile ./src
-        docker push ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:1.0.0
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-
+        image: ${{ secrets.DOCKER_USER }}/${{ env.IMAGE_NAME }}
+        tags: latest
+        registry: docker.io
+        directory: ./src
+        dockerfile: ./src/TradingApp/Dockerfile
+        username: ${{ secrets.DOCKER_USER }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        pushImage: true
