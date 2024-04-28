@@ -30,6 +30,10 @@ jobs:
 
     - name: Login to Amazon ECR
       uses: aws-actions/amazon-ecr-login@v1
+    - name: Check login outputs
+      run: |
+        echo "Login Registry Output: ${{ steps.login-ecr.outputs.registry }}"
+
 
     - name: Build, tag, and push image to Amazon ECR
       run: |
