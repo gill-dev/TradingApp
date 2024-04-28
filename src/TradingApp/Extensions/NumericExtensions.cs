@@ -1,4 +1,6 @@
-﻿namespace TradingApp.Extensions;
+﻿using TradingApp.Models.DataTransferObjects;
+
+namespace TradingApp.Extensions;
 
 public static class NumericExtensions
 {
@@ -175,4 +177,56 @@ public static class NumericExtensions
         => double.IsNaN(value)
             ? 0.0
             : value;
+
+    public static List<double> FindResistanceLevels(Candle[] candles, int lookbackPeriod)
+    {
+        List<double> resistanceLevels = new List<double>();
+
+        for (int i = lookbackPeriod; i < candles.Length; i++)
+        {
+            double high = candles[i].Mid_H;
+            bool isResistance = true;
+            for (int j = 1; j <= lookbackPeriod; j++)
+            {
+                if (candles[i - j].Mid_H >= high || candles[i + j].Mid_H >= high)
+                {
+                    isResistance = false;
+                    break;
+                }
+            }
+            if (isResistance)
+                resistanceLevels.Add(high);
+        }
+
+        return resistanceLevels.Distinct().ToList();
+    }
+
+    public static bool CheckIfSupport(Candle[] candles, double resistanceLevel, double tolerance)
+    {
+        bool broken = false;
+        foreach (var candle in candles)
+        {
+            if (candle.Mid_C > resistanceLevel)
+            {
+                broken = true; // The level was broken
+                break;
+            }
+        }
+
+        if (!broken) return false; // If never broken, it can't turn into support
+
+        // Check for retest as support
+        foreach (var candle in candles)
+        {
+            if (broken && Math.Abs(candle.Mid_L - resistanceLevel) <= tolerance)
+            {
+                if (candle.Mid_C > candle.Mid_L) // Confirm the price bounced off the level
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+
 }

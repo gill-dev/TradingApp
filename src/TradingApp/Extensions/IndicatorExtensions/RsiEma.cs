@@ -1,60 +1,52 @@
-﻿using TradingApp.Models.DataTransferObjects;
+﻿using System.Linq;
+using TradingApp.Models.DataTransferObjects;
 using TradingApp.Models.Enums;
 using TradingApp.Models.Indicators;
+using TradingApp.Extensions;
 
 namespace TradingApp.Extensions.IndicatorExtensions;
 
 public static partial class Indicator
 {
-    public static IndicatorResult[] CalcRsiEma(this Candle[] candles, int rsiWindow = 14, int emaWindow = 200, double rsiLimit = 50.0,
-        double maxSpread = 0.0004, double minGain = 0.0006, double riskReward = 1.5)
+    public static IndicatorResult[] CalcRsiEma(this Candle[] candles, int rsiWindow = 14, int emaWindow = 50,
+        double rsiOverbought = 70, double rsiOversold = 30, double maxSpread = 0.0004, double minGain = 0.0006, double riskReward = 1.5,
+        int resistanceLookBack = 20, double supportTolerance = 0.0005)
     {
-        var rsiResult = candles.CalcRsi(rsiWindow);
-
+        var rsiResults = candles.CalcRsi(rsiWindow);
         var prices = candles.Select(c => c.Mid_C).ToArray();
-
-        var emaResult = prices.CalcEma(emaWindow).ToArray();
+        var emaResults = prices.CalcEma(emaWindow).ToArray();
+        var resistanceLevels = NumericExtensions.FindResistanceLevels(candles, resistanceLookBack);
 
         var length = candles.Length;
-
-        var result = new IndicatorResult[length];
+        var results = new IndicatorResult[length];
 
         for (var i = 0; i < length; i++)
         {
-            result[i] ??= new IndicatorResult();
+            results[i] ??= new IndicatorResult();
+            results[i].Candle = candles[i];
 
-            result[i].Candle = candles[i];
+            var rsi = rsiResults[i].Rsi;
+            var ema = emaResults[i];
 
-            var rsi = rsiResult[i].Rsi;
+            results[i].Gain = Math.Abs(candles[i].Mid_C - ema);
 
-            var ema = emaResult[i];
+            bool supportConfirmed = resistanceLevels.Any(level => NumericExtensions.CheckIfSupport(candles.Take(i + 1).ToArray(), level, supportTolerance));
 
-            var engulfing = i > 0 && candles[i].IsEngulfingCandle(candles[i - 1]);
-
-            result[i].Gain = Math.Abs(candles[i].Mid_C - ema);
-
-            result[i].Signal = engulfing switch
+            // Adjusting the signal logic to include checks for resistance-turned-support
+            results[i].Signal = ((candles[i].Mid_C > ema && rsi > rsiOverbought && supportConfirmed) &&
+                                (candles[i].Spread <= maxSpread && results[i].Gain >= minGain)) switch
             {
-                true when candles[i].Direction == 1 &&
-                          candles[i].Mid_L > ema &&
-                          rsi > rsiLimit &&
-                          candles[i].Spread <= maxSpread &&
-                          result[i].Gain >= minGain => Signal.Buy,
-                true when candles[i].Direction == -1 &&
-                          candles[i].Mid_H < ema &&
-                          rsi < rsiLimit &&
-                          candles[i].Spread <= maxSpread &&
-                          result[i].Gain >= minGain => Signal.Sell,
-                _ => Signal.None
+                true => Signal.Buy,
+                _ => ((candles[i].Mid_C < ema && rsi < rsiOversold) &&
+                      (candles[i].Spread <= maxSpread && results[i].Gain >= minGain)) ? Signal.Sell : Signal.None
             };
 
-            result[i].TakeProfit = candles[i].CalcTakeProfit(result[i]);
-
-            result[i].StopLoss = candles[i].CalcStopLoss(result[i], riskReward);
-
-            result[i].Loss = Math.Abs(candles[i].Mid_C - result[i].StopLoss);
+            results[i].TakeProfit = candles[i].CalcTakeProfit(results[i]);
+            results[i].StopLoss = candles[i].CalcStopLoss(results[i], riskReward);
+            results[i].Loss = Math.Abs(candles[i].Mid_C - results[i].StopLoss);
         }
 
-        return result;
+        return results;
     }
+
 }
