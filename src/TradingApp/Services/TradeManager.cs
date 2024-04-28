@@ -78,7 +78,7 @@ public class TradeManager : BackgroundService
             return;
         }
 
-        var calcResult = candles.CalcMacdEma().Last();
+        var calcResult = candles.CalcRsiEma().Last();
 
         if (calcResult.Signal != Signal.None && await SignalFollowsTrend(settings, calcResult.Signal))
         {
