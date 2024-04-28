@@ -34,4 +34,4 @@ jobs:
     - name: Build, tag, and push image to Amazon ECR
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -f ./src/TradingApp/Dockerfile ./src
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:1.0.0
