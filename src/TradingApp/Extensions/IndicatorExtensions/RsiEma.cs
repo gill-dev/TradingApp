@@ -16,6 +16,7 @@ public static partial class Indicator
         var prices = candles.Select(c => c.Mid_C).ToArray();
         var emaResults = prices.CalcEma(emaWindow).ToArray();
         var resistanceLevels = NumericExtensions.FindResistanceLevels(candles, resistanceLookBack);
+        var atrResults = candles.CalcAtr().ToArray();
 
         var length = candles.Length;
         var results = new IndicatorResult[length];
@@ -41,6 +42,7 @@ public static partial class Indicator
                       (candles[i].Spread <= maxSpread && results[i].Gain >= minGain)) ? Signal.Sell : Signal.None
             };
 
+            results[i].StopLoss = candles[i].CalcStopLoss(results[i], riskReward, atrResults[i]);
             results[i].TakeProfit = candles[i].CalcTakeProfit(results[i]);
             results[i].StopLoss = candles[i].CalcStopLoss(results[i], riskReward);
             results[i].Loss = Math.Abs(candles[i].Mid_C - results[i].StopLoss);

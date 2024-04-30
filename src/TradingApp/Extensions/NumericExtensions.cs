@@ -1,4 +1,6 @@
 ﻿using TradingApp.Models.DataTransferObjects;
+using TradingApp.Models.Enums;
+using TradingApp.Models.Indicators;
 
 namespace TradingApp.Extensions;
 
@@ -227,6 +229,32 @@ public static class NumericExtensions
 
         return false;
     }
+    public static double CalcStopLoss(this Candle candle, IndicatorResult result, double riskReward, double atr)
+    {
+        double stopLoss = result.Signal == Signal.Buy
+            ? candle.Mid_C - atr * riskReward // for Buy signal
+            : candle.Mid_C + atr * riskReward; // for Sell signal
 
+        return stopLoss;
+    }
+    public static IEnumerable<double> CalcAtr(this Candle[] candles, int atrWindow = 14)
+    {
+        double prevClose = candles[0].Mid_C;
+        double atr = 0;
+
+        for (int i = 1; i < candles.Length; i++)
+        {
+            double highLow = candles[i].Mid_H - candles[i].Mid_L;
+            double highClose = Math.Abs(candles[i].Mid_H - prevClose);
+            double lowClose = Math.Abs(candles[i].Mid_L - prevClose);
+
+            double tr = Math.Max(highLow, Math.Max(highClose, lowClose));
+            atr = (atr * (atrWindow - 1) + tr) / atrWindow;
+
+            yield return atr;
+
+            prevClose = candles[i].Mid_C;
+        }
+    }
 
 }
