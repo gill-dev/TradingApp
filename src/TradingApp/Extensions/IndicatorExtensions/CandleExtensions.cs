@@ -1,7 +1,6 @@
-﻿using System;
-using System.Linq;
+﻿using TradingApp.Models.DataTransferObjects;
 
-namespace TradingApp.Models.DataTransferObjects
+namespace TradingApp.Extensions.IndicatorExtensions
 {
     public static class CandleExtensions
     {

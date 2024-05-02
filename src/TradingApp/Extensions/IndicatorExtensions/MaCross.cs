@@ -1,4 +1,6 @@
-﻿using TradingApp.Models.DataTransferObjects;
+﻿using Trading.Bot.Extensions;
+using TradingApp.Extensions;
+using TradingApp.Models.DataTransferObjects;
 using TradingApp.Models.Enums;
 using TradingApp.Models.Indicators;
 
@@ -46,9 +48,9 @@ public static partial class Indicator
                 _ => Signal.None
             };
 
-            result[i].TakeProfit = candles[i].CalcTakeProfit(result[i]);
+            result[i].TakeProfit = candles[i].CalcTakeProfit(result[i], riskReward);
 
-            result[i].StopLoss = candles[i].CalcStopLoss(result[i], riskReward);
+            result[i].StopLoss = candles[i].CalcStopLoss(result[i]);
 
             result[i].Loss = Math.Abs(candles[i].Mid_C - result[i].StopLoss);
         }

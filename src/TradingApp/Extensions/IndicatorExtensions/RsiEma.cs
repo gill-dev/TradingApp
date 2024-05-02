@@ -1,54 +1,59 @@
-﻿using System.Linq;
+﻿using Trading.Bot.Extensions;
+using TradingApp.Extensions;
 using TradingApp.Models.DataTransferObjects;
 using TradingApp.Models.Enums;
 using TradingApp.Models.Indicators;
-using TradingApp.Extensions;
 
 namespace TradingApp.Extensions.IndicatorExtensions;
 
 public static partial class Indicator
 {
-    public static IndicatorResult[] CalcRsiEma(this Candle[] candles, int rsiWindow = 14, int emaWindow = 50,
-        double rsiOverbought = 70, double rsiOversold = 30, double maxSpread = 0.0004, double minGain = 0.0006, double riskReward = 1.5,
-        int resistanceLookBack = 20, double supportTolerance = 0.0005)
+    public static IndicatorResult[] CalcRsiEma(this Candle[] candles, int rsiWindow = 14, int emaWindow = 200,
+        double rsiLimit = 50.0, double maxSpread = 0.0004, double minGain = 0.0006, double riskReward = 1.5)
     {
-        var rsiResults = candles.CalcRsi(rsiWindow);
+        var rsiResult = candles.CalcRsi(rsiWindow);
+
         var prices = candles.Select(c => c.Mid_C).ToArray();
-        var emaResults = prices.CalcEma(emaWindow).ToArray();
-        var resistanceLevels = NumericExtensions.FindResistanceLevels(candles, resistanceLookBack);
-        var atrResults = candles.CalcAtr().ToArray();
+
+        var emaResult = prices.CalcEma(emaWindow).ToArray();
 
         var length = candles.Length;
-        var results = new IndicatorResult[length];
+
+        var result = new IndicatorResult[length];
 
         for (var i = 0; i < length; i++)
         {
-            results[i] ??= new IndicatorResult();
-            results[i].Candle = candles[i];
+            result[i] ??= new IndicatorResult();
 
-            var rsi = rsiResults[i].Rsi;
-            var ema = emaResults[i];
+            result[i].Candle = candles[i];
 
-            results[i].Gain = Math.Abs(candles[i].Mid_C - ema);
+            var engulfing = i > 0 && candles[i].IsEngulfingCandle(candles[i - 1]);
 
-            bool supportConfirmed = resistanceLevels.Any(level => NumericExtensions.CheckIfSupport(candles.Take(i + 1).ToArray(), level, supportTolerance));
+            result[i].Gain = Math.Abs(candles[i].Mid_C - emaResult[i]);
 
-            // Adjusting the signal logic to include checks for resistance-turned-support
-            results[i].Signal = ((candles[i].Mid_C > ema && rsi > rsiOverbought && supportConfirmed) &&
-                                (candles[i].Spread <= maxSpread && results[i].Gain >= minGain)) switch
+            result[i].Signal = candles[i].Direction switch
             {
-                true => Signal.Buy,
-                _ => ((candles[i].Mid_C < ema && rsi < rsiOversold) &&
-                      (candles[i].Spread <= maxSpread && results[i].Gain >= minGain)) ? Signal.Sell : Signal.None
+                1 when engulfing &&
+                       candles[i].Mid_L > emaResult[i] &&
+                       rsiResult[i].Rsi > rsiLimit &&
+                       candles[i].Spread <= maxSpread &&
+                       result[i].Gain >= minGain => Signal.Buy,
+                -1 when engulfing &&
+                        candles[i].Direction == -1 &&
+                        candles[i].Mid_H < emaResult[i] &&
+                        rsiResult[i].Rsi < rsiLimit &&
+                        candles[i].Spread <= maxSpread &&
+                        result[i].Gain >= minGain => Signal.Sell,
+                _ => Signal.None
             };
 
-            results[i].StopLoss = candles[i].CalcStopLoss(results[i], riskReward, atrResults[i]);
-            results[i].TakeProfit = candles[i].CalcTakeProfit(results[i]);
-            results[i].StopLoss = candles[i].CalcStopLoss(results[i], riskReward);
-            results[i].Loss = Math.Abs(candles[i].Mid_C - results[i].StopLoss);
+            result[i].TakeProfit = candles[i].CalcTakeProfit(result[i], riskReward);
+
+            result[i].StopLoss = candles[i].CalcStopLoss(result[i]);
+
+            result[i].Loss = Math.Abs(candles[i].Mid_C - result[i].StopLoss);
         }
 
-        return results;
+        return result;
     }
-
 }

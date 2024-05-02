@@ -1,4 +1,6 @@
-﻿using TradingApp.Models.DataTransferObjects;
+﻿using Trading.Bot.Extensions;
+using TradingApp.Extensions;
+using TradingApp.Models.DataTransferObjects;
 using TradingApp.Models.Enums;
 using TradingApp.Models.Indicators;
 
@@ -6,7 +8,8 @@ namespace TradingApp.Extensions.IndicatorExtensions;
 
 public static partial class Indicator
 {
-    public static IndicatorResult[] CalcMacdEma(this Candle[] candles, int emaWindow = 100, double maxSpread = 0.0004, double minGain = 0.0006, double riskReward = 1.5)
+    public static IndicatorResult[] CalcMacdEma(this Candle[] candles, int emaWindow = 100,
+        double maxSpread = 0.0004, double minGain = 0.0006, double riskReward = 1.5)
     {
         var macd = candles.CalcMacd();
 
@@ -35,24 +38,22 @@ public static partial class Indicator
                 _ => 0
             };
 
-            var ema = emaResult[i];
-
-            result[i].Gain = Math.Abs(candles[i].Mid_C - ema);
+            result[i].Gain = Math.Abs(candles[i].Mid_C - emaResult[i]);
 
             result[i].Signal = direction switch
             {
-                1 when candles[i].Mid_L > ema &&
+                1 when candles[i].Mid_L > emaResult[i] &&
                        candles[i].Spread <= maxSpread &&
                        result[i].Gain >= minGain => Signal.Buy,
-                -1 when candles[i].Mid_H < ema &&
+                -1 when candles[i].Mid_H < emaResult[i] &&
                         candles[i].Spread <= maxSpread &&
                         result[i].Gain >= minGain => Signal.Sell,
                 _ => Signal.None
             };
 
-            result[i].TakeProfit = candles[i].CalcTakeProfit(result[i]);
+            result[i].TakeProfit = candles[i].CalcTakeProfit(result[i], riskReward);
 
-            result[i].StopLoss = candles[i].CalcStopLoss(result[i], riskReward);
+            result[i].StopLoss = candles[i].CalcStopLoss(result[i]);
 
             result[i].Loss = Math.Abs(candles[i].Mid_C - result[i].StopLoss);
         }

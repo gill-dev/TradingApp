@@ -1,8 +1,4 @@
-﻿using TradingApp.Models.DataTransferObjects;
-using TradingApp.Models.Enums;
-using TradingApp.Models.Indicators;
-
-namespace TradingApp.Extensions;
+﻿namespace Trading.Bot.Extensions;
 
 public static class NumericExtensions
 {
@@ -69,11 +65,7 @@ public static class NumericExtensions
 
         if (length <= window)
         {
-            var average = sequence.Take(length).Average();
-            for (int i = 0; i < length; i++)
-            {
-                yield return average;
-            }
+            yield return 0.0;
         }
 
         var alpha = 2.0 / (window + 1);
@@ -179,82 +171,4 @@ public static class NumericExtensions
         => double.IsNaN(value)
             ? 0.0
             : value;
-
-    public static List<double> FindResistanceLevels(Candle[] candles, int lookbackPeriod)
-    {
-        List<double> resistanceLevels = new List<double>();
-
-        for (int i = lookbackPeriod; i < candles.Length; i++)
-        {
-            double high = candles[i].Mid_H;
-            bool isResistance = true;
-            for (int j = 1; j <= lookbackPeriod; j++)
-            {
-                if (candles[i - j].Mid_H >= high || candles[i + j].Mid_H >= high)
-                {
-                    isResistance = false;
-                    break;
-                }
-            }
-            if (isResistance)
-                resistanceLevels.Add(high);
-        }
-
-        return resistanceLevels.Distinct().ToList();
-    }
-
-    public static bool CheckIfSupport(Candle[] candles, double resistanceLevel, double tolerance)
-    {
-        bool broken = false;
-        foreach (var candle in candles)
-        {
-            if (candle.Mid_C > resistanceLevel)
-            {
-                broken = true; // The level was broken
-                break;
-            }
-        }
-
-        if (!broken) return false; // If never broken, it can't turn into support
-
-        // Check for retest as support
-        foreach (var candle in candles)
-        {
-            if (broken && Math.Abs(candle.Mid_L - resistanceLevel) <= tolerance)
-            {
-                if (candle.Mid_C > candle.Mid_L) // Confirm the price bounced off the level
-                    return true;
-            }
-        }
-
-        return false;
-    }
-    public static double CalcStopLoss(this Candle candle, IndicatorResult result, double riskReward, double atr)
-    {
-        double stopLoss = result.Signal == Signal.Buy
-            ? candle.Mid_C - atr * riskReward // for Buy signal
-            : candle.Mid_C + atr * riskReward; // for Sell signal
-
-        return stopLoss;
-    }
-    public static IEnumerable<double> CalcAtr(this Candle[] candles, int atrWindow = 14)
-    {
-        double prevClose = candles[0].Mid_C;
-        double atr = 0;
-
-        for (int i = 1; i < candles.Length; i++)
-        {
-            double highLow = candles[i].Mid_H - candles[i].Mid_L;
-            double highClose = Math.Abs(candles[i].Mid_H - prevClose);
-            double lowClose = Math.Abs(candles[i].Mid_L - prevClose);
-
-            double tr = Math.Max(highLow, Math.Max(highClose, lowClose));
-            atr = (atr * (atrWindow - 1) + tr) / atrWindow;
-
-            yield return atr;
-
-            prevClose = candles[i].Mid_C;
-        }
-    }
-
 }

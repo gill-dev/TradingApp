@@ -1,4 +1,5 @@
-﻿using TradingApp.Configuration;
+﻿using Trading.Bot.Extensions;
+using TradingApp.Configuration;
 using TradingApp.Extensions;
 using TradingApp.Models.DataTransferObjects;
 
