@@ -1,5 +1,4 @@
-﻿using Trading.Bot.Extensions;
-using TradingApp.Extensions;
+﻿using TradingApp.Extensions;
 using TradingApp.Models.ApiResponses;
 
 namespace TradingApp.Models.DataTransferObjects;

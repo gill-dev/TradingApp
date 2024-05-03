@@ -1,4 +1,6 @@
-﻿namespace TradingApp.Models.ApiResponses;
+﻿using TradingApp.Models.ApiResponses;
+
+namespace TradingApp.Models.ApiResponses;
 
 public class OrderFilledResponse
 {
@@ -40,6 +42,7 @@ public class TradeOpened
 {
     public string TradeID { get; set; }
     public double Units { get; set; }
+    public double Price { get; set; }
 }
 
 public class TradeClosed

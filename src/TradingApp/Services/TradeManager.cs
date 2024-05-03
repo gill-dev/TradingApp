@@ -74,13 +74,13 @@ public class TradeManager : BackgroundService
 
         if (!candles.Any() || !GoodTradingTime())
         {
-            _logger.LogInformation("Not placing a trade for {Instrument}, candles not found or not a good time to trade.", settings.Instrument);
+            _logger.LogInformation(
+                "Not placing a trade for {Instrument}, candles not found or not a good time to trade.", settings.Instrument);
             return;
         }
 
-        var calcResult = candles.CalcBollingerBandsEma(settings.Integers[0], settings.Integers[1], settings.Integers[2],
-            settings.Doubles[0], settings.Doubles[1], settings.Doubles[2], settings.MaxSpread, settings.MinGain,
-            settings.MinVolume, settings.RiskReward).Last();
+        var calcResult = candles.CalcBollingerBandsEma(settings.Integers[0], settings.Integers[1],
+            settings.Doubles[0], settings.MaxSpread, settings.MinGain, settings.MinVolume, settings.RiskReward).Last();
 
         if (calcResult.Signal != Signal.None && await SignalFollowsTrend(settings, calcResult.Signal))
         {
@@ -95,7 +95,7 @@ public class TradeManager : BackgroundService
     {
         var candles = await _apiService.GetCandles(settings.Instrument, settings.LongerGranularity);
 
-        var generalTrend = candles.CalcTrend().Last();
+        var generalTrend = candles.CalcTrend(settings.Integers[1]).Last();
 
         return signal == generalTrend;
     }
@@ -113,7 +113,7 @@ public class TradeManager : BackgroundService
     {
         var retryCount = 0;
 
-        Start:
+    Start:
 
         if (retryCount >= 10)
         {
@@ -154,7 +154,9 @@ public class TradeManager : BackgroundService
 
         var tradeUnits = await GetTradeUnits(settings, indicator);
 
-        var order = new Order(instrument, tradeUnits, indicator.Signal, indicator.StopLoss, indicator.TakeProfit);
+        var trailingStop = settings.TrailingStop ? CalcTrailingStop(indicator, settings.RiskReward) : 0;
+
+        var order = new Order(instrument, tradeUnits, indicator.Signal, indicator.StopLoss, indicator.TakeProfit, trailingStop);
 
         var ofResponse = await _apiService.PlaceTrade(order);
 
@@ -166,16 +168,24 @@ public class TradeManager : BackgroundService
 
         await SendEmailNotification(new
         {
-            ofResponse.AccountBalance,
             ofResponse.Instrument,
             Signal = indicator.Signal.ToString(),
-            ofResponse.Units,
-            TriggerPrice = indicator.Candle.Mid_C,
-            TakeProfit = order.TakeProfitOnFill.Price,
-            StopLoss = order.StopLossOnFill.Price,
-            indicator.Candle.Volume,
-            ofResponse.OrderID
+            ofResponse.TradeOpened.Units,
+            ofResponse.TradeOpened.Price,
+            TakeProfit = order.TakeProfitOnFill?.Price ?? 0,
+            StopLoss = order.StopLossOnFill?.Price ?? 0,
+            TrailingStop = order.TrailingStopLossOnFill?.Distance ?? 0
         });
+    }
+
+    private static double CalcTrailingStop(IndicatorBase indicator, double riskReward)
+    {
+        return indicator.Signal switch
+        {
+            Signal.Buy => (indicator.Candle.Ask_C - indicator.StopLoss) * riskReward,
+            Signal.Sell => (indicator.StopLoss - indicator.Candle.Bid_C) * riskReward,
+            _ => 0
+        };
     }
 
     private async Task SendEmailNotification(object emailBody)

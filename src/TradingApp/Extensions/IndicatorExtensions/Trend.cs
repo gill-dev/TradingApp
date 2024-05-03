@@ -1,5 +1,4 @@
-﻿using Trading.Bot.Extensions;
-using TradingApp.Models.DataTransferObjects;
+﻿using TradingApp.Models.DataTransferObjects;
 using TradingApp.Models.Enums;
 
 namespace TradingApp.Extensions.IndicatorExtensions;

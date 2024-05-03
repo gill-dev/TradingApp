@@ -2,7 +2,7 @@
 using TradingApp.Models.Enums;
 using TradingApp.Models.Indicators;
 
-namespace Trading.Bot.Extensions;
+namespace TradingApp.Extensions;
 
 public static class MiscellaneousExtensions
 {

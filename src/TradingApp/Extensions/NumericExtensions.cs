@@ -1,4 +1,4 @@
-﻿namespace Trading.Bot.Extensions;
+﻿namespace TradingApp.Extensions;
 
 public static class NumericExtensions
 {
