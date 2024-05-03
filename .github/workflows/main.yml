@@ -18,7 +18,7 @@ jobs:
     - name: App Settings Variable Substitution
       uses: microsoft/variable-substitution@v1
       with:
-        files: './src/TradingApp/appsettings.json'
+        files: './src/Trading.Bot/appsettings.json'
       env:
         Constants.ApiKey: ${{ secrets.OANDAAPIKEY }}
         Constants.AccountId: ${{ secrets.OANDAACCOUNTID }}
@@ -31,7 +31,7 @@ jobs:
         tags: latest
         registry: docker.io
         directory: ./src
-        dockerfile: ./src/TradingApp/Dockerfile
+        dockerfile: ./src/Trading.Bot/Dockerfile
         username: ${{ secrets.DOCKER_USER }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         pushImage: true
