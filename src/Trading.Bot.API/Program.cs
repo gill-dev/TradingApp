@@ -6,7 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 var constants = builder.Configuration
     .GetSection(nameof(Constants))
     .Get<Constants>();
-
+builder.Services.AddSingleton(constants);
 builder.Services.AddOandaApiService(constants);
 
 builder.Services.AddMediatR(c =>
