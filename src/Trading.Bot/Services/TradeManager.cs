@@ -71,11 +71,13 @@ public class TradeManager : BackgroundService
                 "Not placing a trade for {Instrument}, candles not found or not a good time to trade.", settings.Instrument);
             return;
         }
+        
+        var macdResults = candles.CalcMacd().Last();
 
-        var calcResult = candles.CalcBollingerBandsEma(settings.Integers[0], settings.Integers[1],
+        var calcResult = candles.CalcBollingerBandsEmaMacd(settings.Integers[0], settings.Integers[1],
             settings.Doubles[0], settings.MaxSpread, settings.MinGain, settings.MinVolume, settings.RiskReward).Last();
 
-        if (calcResult.Signal != Signal.None && await SignalFollowsTrend(settings, calcResult.Signal))
+        if (calcResult.Signal != Signal.None && macdResults.Histogram > 0 && await SignalFollowsTrend(settings, calcResult.Signal))
         {
             await TryPlaceTrade(settings, calcResult);
             return;

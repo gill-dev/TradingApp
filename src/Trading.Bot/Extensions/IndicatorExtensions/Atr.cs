@@ -27,7 +27,7 @@ public static partial class Indicator
             result[i].MaxTr = trueRanges.Max();
         }
 
-        var maxTra = result.Select(x => x.MaxTr).ToArray().CalcSma(window).ToArray();
+        var maxTra = result.Select(x => x.MaxTr).ToArray().CalcEma(window).ToArray();
 
         for (var i = 0; i < length; i++)
         {
