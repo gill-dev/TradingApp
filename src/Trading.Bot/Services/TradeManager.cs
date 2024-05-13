@@ -74,23 +74,22 @@ public class TradeManager : BackgroundService
         
         var macdResults = candles.CalcMacd().Last();
 
+        //var calcResult = candles.CalcBollingerBandsEmaMacd(settings.Integers[0], settings.Integers[1],
+        //    settings.Doubles[0], settings.MaxSpread, settings.MinGain, settings.MinVolume, settings.RiskReward).Last();
+
+        //if (calcResult.Signal != Signal.None && macdResults.Histogram > 0 && await SignalFollowsTrend(settings, calcResult.Signal))
+        //{
+        //    await TryPlaceTrade(settings, calcResult);
+        //    return;
+        //}
         var calcResult = candles.CalcBollingerBandsEma(settings.Integers[0], settings.Integers[1],
             settings.Doubles[0], settings.MaxSpread, settings.MinGain, settings.MinVolume, settings.RiskReward).Last();
 
-        if (calcResult.Signal != Signal.None && macdResults.Histogram > 0 && await SignalFollowsTrend(settings, calcResult.Signal))
+        if (calcResult.Signal != Signal.None && await SignalFollowsTrend(settings, calcResult.Signal))
         {
             await TryPlaceTrade(settings, calcResult);
             return;
         }
-        //var calc2Result = candles.CalcBollingerBandsEma(settings.Integers[0], settings.Integers[1],
-        //    settings.Doubles[0], settings.MaxSpread, settings.MinGain, settings.MinVolume, settings.RiskReward).Last();
-
-        //if (calc2Result.Signal != Signal.None && await SignalFollowsTrend(settings, calc2Result.Signal))
-        //{
-        //    await TryPlaceTrade(settings, calc2Result);
-        //    return;
-        //}
-
         _logger.LogInformation("Not placing a trade for {Instrument} based on the indicator", settings.Instrument);
     }
 
