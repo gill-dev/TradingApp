@@ -25,9 +25,7 @@ public static partial class Indicator
             result[i].Candle = candles[i];
 
             double bbWidth = bollingerBands[i].UpperBand - bollingerBands[i].LowerBand;
-            //result[i].Gain = bbWidth;
-
-            result[i].Gain = atr[i].Atr;
+            result[i].Gain = bbWidth;
 
             bool isBuySignal = (emaShortResult[i] > emaLongResult[i] && emaShortResult[i - 1] <= emaLongResult[i - 1]) &&
                                (prices[i] <= bollingerBands[i].LowerBand || (prices[i] > bollingerBands[i].Sma && prices[i - 1] <= bollingerBands[i].Sma)) &&
