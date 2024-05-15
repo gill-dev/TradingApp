@@ -185,8 +185,8 @@ public class TradeManager : BackgroundService
     {
         await _emailService.SendMailAsync(new EmailData
         {
-            EmailToAddress = "mike.avgeros@gmail.com",
-            EmailToName = "Mike",
+            EmailToAddress = "gillwolmarans@gmail.com",
+            EmailToName = "Gill",
             EmailSubject = "New Trade",
             EmailBody = JsonSerializer.Serialize(emailBody, new JsonSerializerOptions
             {
