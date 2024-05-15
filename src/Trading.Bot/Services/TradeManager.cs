@@ -18,7 +18,7 @@ public class TradeManager : BackgroundService
         _liveTradeCache = liveTradeCache;
         _tradeConfiguration = tradeConfiguration;
         _emailService = emailService;
-        _options.MaxDegreeOfParallelism = _tradeConfiguration.TradeSettings.Length;
+        _options.MaxDegreeOfParallelism = _tradeConfiguration.TradeSettings.Length / 2;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -67,14 +67,11 @@ public class TradeManager : BackgroundService
 
         if (!candles.Any() || !GoodTradingTime())
         {
-            _logger.LogInformation(
-                "Not placing a trade for {Instrument}, candles not found or not a good time to trade.", settings.Instrument);
+            _logger.LogInformation("Not placing a trade for {Instrument}, candles not found or not a good time to trade.", settings.Instrument);
             return;
         }
-        
-        var macdResults = candles.CalcMacd().Last();
 
-        var calcResult = candles.CalculateFirstCrossSignals(settings.Integers[0], settings.Integers[1],
+        var calcResult = candles.CalcBollingerBandsEma(settings.Integers[0], settings.Integers[1],
             settings.Doubles[0], settings.MaxSpread, settings.MinGain, settings.MinVolume, settings.RiskReward).Last();
 
         if (calcResult.Signal != Signal.None && await SignalFollowsTrend(settings, calcResult.Signal))
@@ -82,6 +79,7 @@ public class TradeManager : BackgroundService
             await TryPlaceTrade(settings, calcResult);
             return;
         }
+
         _logger.LogInformation("Not placing a trade for {Instrument} based on the indicator", settings.Instrument);
     }
 
@@ -97,15 +95,17 @@ public class TradeManager : BackgroundService
     private static bool GoodTradingTime()
     {
         var date = DateTime.UtcNow;
-    
-        return date.Hour <= 20 || date.Hour >= 8;
+
+        if (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) return false;
+
+        return date.Hour is <= 20 and >= 8;
     }
 
     private async Task<bool> NewCandleAvailable(TradeSettings settings, LivePrice price, CancellationToken stoppingToken)
     {
         var retryCount = 0;
 
-        Start:
+    Start:
 
         if (retryCount >= 10)
         {
@@ -164,6 +164,7 @@ public class TradeManager : BackgroundService
             Signal = indicator.Signal.ToString(),
             ofResponse.TradeOpened.Units,
             ofResponse.TradeOpened.Price,
+            indicator.Gain,
             TakeProfit = order.TakeProfitOnFill?.Price ?? 0,
             StopLoss = order.StopLossOnFill?.Price ?? 0,
             TrailingStop = order.TrailingStopLossOnFill?.Distance ?? 0
@@ -184,8 +185,8 @@ public class TradeManager : BackgroundService
     {
         await _emailService.SendMailAsync(new EmailData
         {
-            EmailToAddress = "gillwolmarans@gmail.com",
-            EmailToName = "Gill",
+            EmailToAddress = "mike.avgeros@gmail.com",
+            EmailToName = "Mike",
             EmailSubject = "New Trade",
             EmailBody = JsonSerializer.Serialize(emailBody, new JsonSerializerOptions
             {
