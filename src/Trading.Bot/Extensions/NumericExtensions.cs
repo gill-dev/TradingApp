@@ -167,6 +167,12 @@ public static class NumericExtensions
         return Math.Sqrt(sum / length).NaN2Zero();
     }
 
+    public static IEnumerable<double> Calc310Oscillator(this double[] prices)
+    {
+        var ema3 = prices.CalcEma(3);
+        var ema10 = prices.CalcEma(10);
+        return ema3.Zip(ema10, (e3, e10) => e3 - e10);
+    }
     public static double NaN2Zero(this double value)
         => double.IsNaN(value)
             ? 0.0

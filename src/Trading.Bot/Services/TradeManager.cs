@@ -74,15 +74,7 @@ public class TradeManager : BackgroundService
         
         var macdResults = candles.CalcMacd().Last();
 
-        //var calcResult = candles.CalcBollingerBandsEmaMacd(settings.Integers[0], settings.Integers[1],
-        //    settings.Doubles[0], settings.MaxSpread, settings.MinGain, settings.MinVolume, settings.RiskReward).Last();
-
-        //if (calcResult.Signal != Signal.None && macdResults.Histogram > 0 && await SignalFollowsTrend(settings, calcResult.Signal))
-        //{
-        //    await TryPlaceTrade(settings, calcResult);
-        //    return;
-        //}
-        var calcResult = candles.CalcBollingerBandsEmaMacd(settings.Integers[0], settings.Integers[1],
+        var calcResult = candles.CalculateFirstCrossSignals(settings.Integers[0], settings.Integers[1],
             settings.Doubles[0], settings.MaxSpread, settings.MinGain, settings.MinVolume, settings.RiskReward).Last();
 
         if (calcResult.Signal != Signal.None && await SignalFollowsTrend(settings, calcResult.Signal))
