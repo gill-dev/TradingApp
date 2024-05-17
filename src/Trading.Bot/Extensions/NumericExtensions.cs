@@ -178,3 +178,4 @@ public static class NumericExtensions
             ? 0.0
             : value;
 }
+

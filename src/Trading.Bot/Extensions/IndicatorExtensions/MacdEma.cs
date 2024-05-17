@@ -1,57 +1,84 @@
-﻿namespace Trading.Bot.Extensions.IndicatorExtensions;
-
-public static partial class Indicator
+﻿namespace Trading.Bot.Extensions.IndicatorExtensions
 {
-    public static IndicatorResult[] CalcMacdEma(this Candle[] candles, int emaWindow = 100,
-        double maxSpread = 0.0004, double minGain = 0.0006, double riskReward = 1.5)
+    public static partial class Indicator
     {
-        var macd = candles.CalcMacd();
-
-        var prices = candles.Select(c => c.Mid_C).ToArray();
-
-        var emaResult = prices.CalcEma(emaWindow).ToArray();
-
-        var length = candles.Length;
-
-        var result = new IndicatorResult[length];
-
-        for (var i = 0; i < length; i++)
+        public static IndicatorResult[] CalcMacdEma(this Candle[] candles, int bbWindow = 20, int emaWindow = 100,
+            double stdDev = 2, double maxSpread = 0.0004, double minGain = 0.0006, int minVolume = 100, double riskReward = 1.5)
         {
-            result[i] ??= new IndicatorResult();
+            var macd = candles.CalcMacd().ToArray();
+            var prices = candles.Select(c => c.Mid_C).ToArray();
 
-            result[i].Candle = candles[i];
+            var emaShort = prices.CalcEma(15).ToArray();
+            var emaLong = prices.CalcEma(60).ToArray();
 
-            var macDelta = macd[i].Macd - macd[i].SignalLine;
+            var length = candles.Length;
+            var result = new IndicatorResult[length];
 
-            var macDeltaPrev = i == 0 ? 0.0 : macd[i - 1].Macd - macd[i - 1].SignalLine;
-
-            var direction = macDelta switch
+            for (var i = 0; i < length; i++)
             {
-                > 0 when macDeltaPrev < 0 => 1,
-                < 0 when macDeltaPrev > 0 => -1,
-                _ => 0
-            };
+                result[i] ??= new IndicatorResult();
+                result[i].Candle = candles[i];
 
-            result[i].Gain = Math.Abs(candles[i].Mid_C - emaResult[i]);
+                var macDelta = macd[i].Macd - macd[i].SignalLine;
+                var macDeltaPrev = i == 0 ? 0.0 : macd[i - 1].Macd - macd[i - 1].SignalLine;
 
-            result[i].Signal = direction switch
-            {
-                1 when candles[i].Mid_L > emaResult[i] &&
-                       candles[i].Spread <= maxSpread &&
-                       result[i].Gain >= minGain => Signal.Buy,
-                -1 when candles[i].Mid_H < emaResult[i] &&
-                        candles[i].Spread <= maxSpread &&
-                        result[i].Gain >= minGain => Signal.Sell,
-                _ => Signal.None
-            };
+                // Determine direction based on MACD line crossing
+                var direction = macDelta switch
+                {
+                    > 0 when macDeltaPrev < 0 => 1,
+                    < 0 when macDeltaPrev > 0 => -1,
+                    _ => 0
+                };
 
-            result[i].TakeProfit = candles[i].CalcTakeProfit(result[i], riskReward);
+                result[i].Gain = Math.Abs(candles[i].Mid_C - emaShort[i]);
 
-            result[i].StopLoss = candles[i].CalcStopLoss(result[i]);
+                // Check criteria for long trades
+                if (emaShort[i] > emaLong[i] && macd[i].Macd < 0 && CheckBullishDivergence(macd, candles, i))
+                {
+                    result[i].Signal = direction == 1 && candles[i].Spread <= maxSpread && result[i].Gain >= minGain
+                        ? Signal.Buy
+                        : Signal.None;
+                }
+                // Check criteria for short trades
+                else if (emaShort[i] < emaLong[i] && macd[i].Macd > 0 && CheckBearishDivergence(macd, candles, i))
+                {
+                    result[i].Signal = direction == -1 && candles[i].Spread <= maxSpread && result[i].Gain >= minGain
+                        ? Signal.Sell
+                        : Signal.None;
+                }
+                else
+                {
+                    result[i].Signal = Signal.None;
+                }
 
-            result[i].Loss = Math.Abs(candles[i].Mid_C - result[i].StopLoss);
+                result[i].TakeProfit = candles[i].CalcTakeProfit(result[i], riskReward);
+                result[i].StopLoss = candles[i].CalcStopLoss(result[i]);
+                result[i].Loss = Math.Abs(candles[i].Mid_C - result[i].StopLoss);
+            }
+
+            return result;
         }
 
-        return result;
+        private static bool CheckBullishDivergence(this MacdResult[] macd, Candle[] candles, int index)
+        {
+            if (index < 2) return false;
+
+            // Check for bullish divergence criteria
+            return candles[index].Mid_L < candles[index - 2].Mid_L &&
+                   macd[index].Macd > macd[index - 2].Macd &&
+                   macd[index - 1].Histogram < 0 && macd[index - 1].Histogram > macd[index - 2].Histogram &&
+                   macd[index - 1].Histogram < macd[index - 2].Histogram;
+        }
+
+        private static bool CheckBearishDivergence(this MacdResult[] macd, Candle[] candles, int index)
+        {
+            if (index < 2) return false;
+
+            // Check for bearish divergence criteria
+            return candles[index].Mid_H > candles[index - 2].Mid_H &&
+                   macd[index].Macd < macd[index - 2].Macd &&
+                   macd[index - 1].Histogram > 0 && macd[index - 1].Histogram < macd[index - 2].Histogram &&
+                   macd[index - 1].Histogram > macd[index - 2].Histogram;
+        }
     }
 }
