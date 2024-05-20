@@ -33,14 +33,14 @@
                 result[i].Gain = Math.Abs(candles[i].Mid_C - emaShort[i]);
 
                 // Check criteria for long trades
-                if (emaShort[i] > emaLong[i] && macd[i].Macd < 0 && CheckBullishDivergence(macd, candles, i))
+                if (emaShort[i] > emaLong[i] && macd[i].Macd < 0)
                 {
                     result[i].Signal = direction == 1 && candles[i].Spread <= maxSpread && result[i].Gain >= minGain
                         ? Signal.Buy
                         : Signal.None;
                 }
                 // Check criteria for short trades
-                else if (emaShort[i] < emaLong[i] && macd[i].Macd > 0 && CheckBearishDivergence(macd, candles, i))
+                else if (emaShort[i] < emaLong[i] && macd[i].Macd > 0 )
                 {
                     result[i].Signal = direction == -1 && candles[i].Spread <= maxSpread && result[i].Gain >= minGain
                         ? Signal.Sell
@@ -59,26 +59,5 @@
             return result;
         }
 
-        private static bool CheckBullishDivergence(this MacdResult[] macd, Candle[] candles, int index)
-        {
-            if (index < 2) return false;
-
-            // Check for bullish divergence criteria
-            return candles[index].Mid_L < candles[index - 2].Mid_L &&
-                   macd[index].Macd > macd[index - 2].Macd &&
-                   macd[index - 1].Histogram < 0 && macd[index - 1].Histogram > macd[index - 2].Histogram &&
-                   macd[index - 1].Histogram < macd[index - 2].Histogram;
-        }
-
-        private static bool CheckBearishDivergence(this MacdResult[] macd, Candle[] candles, int index)
-        {
-            if (index < 2) return false;
-
-            // Check for bearish divergence criteria
-            return candles[index].Mid_H > candles[index - 2].Mid_H &&
-                   macd[index].Macd < macd[index - 2].Macd &&
-                   macd[index - 1].Histogram > 0 && macd[index - 1].Histogram < macd[index - 2].Histogram &&
-                   macd[index - 1].Histogram > macd[index - 2].Histogram;
-        }
     }
 }

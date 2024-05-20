@@ -20,7 +20,7 @@ public class MacdEmaHandler : IRequestHandler<MacdEmaRequest, IResult>
 
             var minGain = request.MinGain ?? 0.0006;
 
-            var macdEma = candles.CalcMacdEma(request.EmaWindow, maxSpread, minGain);
+            var macdEma = candles.CalcMacdEma();
 
             var tradingSim = TradeResult.SimulateTrade(macdEma.Cast<IndicatorBase>().ToArray());
 
