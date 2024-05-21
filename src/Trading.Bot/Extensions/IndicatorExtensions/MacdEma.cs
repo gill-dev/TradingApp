@@ -44,25 +44,6 @@
                     _ => Signal.None
                 };
 
-                // Check criteria for long trades
-                //if (emaShort[i] > emaLong[i] && macd[i].Macd < 0)
-                //{
-                //    result[i].Signal = direction == 1 && candles[i].Spread <= maxSpread && result[i].Gain >= minGain
-                //        ? Signal.Buy
-                //        : Signal.None;
-                //}
-                //// Check criteria for short trades
-                //else if (emaShort[i] < emaLong[i] && macd[i].Macd > 0 )
-                //{
-                //    result[i].Signal = direction == -1 && candles[i].Spread <= maxSpread && result[i].Gain >= minGain
-                //        ? Signal.Sell
-                //        : Signal.None;
-                //}
-                //else
-                //{
-                //    result[i].Signal = Signal.None;
-                //}
-
                 result[i].TakeProfit = candles[i].CalcTakeProfit(result[i], riskReward);
                 result[i].StopLoss = candles[i].CalcStopLoss(result[i]);
                 result[i].Loss = Math.Abs(candles[i].Mid_C - result[i].StopLoss);
