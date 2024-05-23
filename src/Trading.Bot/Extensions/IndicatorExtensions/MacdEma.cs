@@ -37,18 +37,16 @@
 
                 result[i].Signal = direction switch
                 {
-                    1 when macd[i].Macd > macd[i].SignalLine &&
-                           shouldBuy &&
+                    1 when shouldBuy &&
                            candles[i].Spread <= maxSpread &&
                            result[i].Gain >= minGain => Signal.Buy,
-                    -1 when macd[i].Macd < macd[i].SignalLine &&
-                            shouldSell &&
+                    -1 when shouldSell &&
                             candles[i].Spread <= maxSpread &&
                             result[i].Gain >= minGain => Signal.Sell,
                     _ => Signal.None
                 };
 
-                result[i].TakeProfit = candles[i].CalcEMATakeProfit(result[i], ema[i]);
+                result[i].TakeProfit = candles[i].CalcTakeProfit(result[i], riskReward);
                 result[i].StopLoss = candles[i].CalcStopLoss(result[i]);
                 result[i].Loss = Math.Abs(candles[i].Mid_C - result[i].StopLoss);
             }
