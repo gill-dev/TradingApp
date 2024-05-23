@@ -9,9 +9,8 @@
 
             var prices = candles.Select(c => c.Mid_C).ToArray();
 
-            var emaShort = prices.CalcEma(13).ToArray();
-            var emaLong = prices.CalcEma(55).ToArray();
-
+            var ema = prices.CalcEma(emaWindow).ToArray();
+            
             var length = candles.Length;
             var result = new IndicatorResult[length];
 
@@ -31,20 +30,26 @@
                     _ => 0
                 };
 
-                result[i].Gain = Math.Abs(candles[i].Mid_C - emaShort[i]);
+                result[i].Gain = Math.Abs(candles[i].Mid_C - ema[i]);
+
+                bool isPriceAboveEma = candles[i].Mid_C > ema[i];
 
                 result[i].Signal = direction switch
                 {
-                    1 when emaShort[i] > emaLong[i] && 
+                    1 when macd[i].Macd > macd[i].SignalLine &&
+                           macd[i].Macd > 0 &&
+                           isPriceAboveEma &&
                            candles[i].Spread <= maxSpread &&
                            result[i].Gain >= minGain => Signal.Buy,
-                    -1 when emaShort[i] < emaLong[i] &&
+                    -1 when macd[i].Macd < macd[i].SignalLine &&
+                            macd[i].Macd < 0 &&
+                            !isPriceAboveEma &&
                             candles[i].Spread <= maxSpread &&
                             result[i].Gain >= minGain => Signal.Sell,
                     _ => Signal.None
                 };
 
-                result[i].TakeProfit = candles[i].CalcTakeProfit(result[i], riskReward);
+                result[i].TakeProfit = candles[i].CalcEMATakeProfit(result[i], ema[i]);
                 result[i].StopLoss = candles[i].CalcStopLoss(result[i]);
                 result[i].Loss = Math.Abs(candles[i].Mid_C - result[i].StopLoss);
             }
