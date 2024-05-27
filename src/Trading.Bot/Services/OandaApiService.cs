@@ -252,7 +252,14 @@ public class OandaApiService
 
         return response.StatusCode.IsSuccessStatusCode() && response.Value is not null;
     }
+    public async Task<bool> ClosePosition(string instrument)
+    {
+        var endpoint = $"accounts/{_accountId}/positions/{instrument}/close";
 
+        var response = await PutAsync<OrderFilledResponse>(endpoint, dataKey: "orderFillTransaction");
+
+        return response.StatusCode.IsSuccessStatusCode() && response.Value is not null;
+    }
     public async Task<TradeResponse[]> GetOpenTrades()
     {
         var endpoint = $"accounts/{_accountId}/openTrades";

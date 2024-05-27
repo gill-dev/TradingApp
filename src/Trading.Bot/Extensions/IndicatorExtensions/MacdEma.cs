@@ -32,17 +32,17 @@
 
                 result[i].Gain = Math.Abs(candles[i].Mid_C - ema[i]);
 
-                bool shouldSell = candles[i].Mid_H < ema[i];
-                bool shouldBuy = candles[i].Mid_L > ema[i];
+                bool shouldSell = candles[i].Mid_C < ema[i];
+                bool shouldBuy = candles[i].Mid_O > ema[i];
 
                 result[i].Signal = direction switch
                 {
                     1 when shouldBuy &&
                            candles[i].Spread <= maxSpread &&
                            result[i].Gain >= minGain => Signal.Buy,
-                    -1 when shouldSell &&
-                            candles[i].Spread <= maxSpread &&
-                            result[i].Gain >= minGain => Signal.Sell,
+                    //-1 when shouldSell &&
+                    //        candles[i].Spread <= maxSpread &&
+                    //        result[i].Gain >= minGain => Signal.Sell,
                     _ => Signal.None
                 };
 

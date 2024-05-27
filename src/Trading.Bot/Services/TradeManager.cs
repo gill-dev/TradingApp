@@ -18,7 +18,7 @@ public class TradeManager : BackgroundService
         _liveTradeCache = liveTradeCache;
         _tradeConfiguration = tradeConfiguration;
         _emailService = emailService;
-        _options.MaxDegreeOfParallelism = _tradeConfiguration.TradeSettings.Length / 2;
+        _options.MaxDegreeOfParallelism = _tradeConfiguration.TradeSettings.Length / 3;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -52,7 +52,7 @@ public class TradeManager : BackgroundService
                     }
                 });
 
-            await Task.Delay(10, stoppingToken);
+            await Task.Delay(5, stoppingToken);
         }
     }
 
@@ -60,7 +60,7 @@ public class TradeManager : BackgroundService
     {
         var settings = _tradeConfiguration.TradeSettings.First(x => x.Instrument == price.Instrument);
 
-        var candles = await _apiService.GetCandles(settings.Instrument, settings.MainGranularity); // Get candles for 20 EMA
+        var candles = await _apiService.GetCandles(settings.Instrument, settings.MainGranularity); 
         if (candles.Length < 9) return; 
 
         var ema9 = candles.Select(c => c.Mid_C).ToArray().CalcEma(9).Last();
@@ -68,7 +68,7 @@ public class TradeManager : BackgroundService
 
         if (lastCandle.Mid_C < ema9)
         {
-            var closeSuccess = await _apiService.CloseTrade(price.Instrument);
+            var closeSuccess = await _apiService.ClosePosition(price.Instrument);
             if (closeSuccess)
             {
                 _logger.LogInformation("Trade closed for {Instrument} at {Price} because price fell below 9 EMA", price.Instrument, lastCandle.Mid_C);
@@ -122,7 +122,7 @@ public class TradeManager : BackgroundService
 
         if (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) return false;
 
-        return date.Hour is <= 20 and >= 8;
+        return date.Hour is <= 18 and >= 8;
     }
 
     private async Task<bool> NewCandleAvailable(TradeSettings settings, LivePrice price, CancellationToken stoppingToken)
