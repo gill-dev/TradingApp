@@ -255,8 +255,11 @@ public class OandaApiService
     public async Task<bool> ClosePosition(string instrument)
     {
         var endpoint = $"accounts/{_accountId}/positions/{instrument}/close";
-
-        var response = await PutAsync<InstrumentResponse>(endpoint, dataKey: "orderFillTransaction");
+        var body = new
+        {
+            longUnits = "ALL"
+        };
+        var response = await PutAsync<OrderUpdatedResponse>(endpoint, body: body);
 
         return response.StatusCode.IsSuccessStatusCode() && response.Value is not null;
     }
