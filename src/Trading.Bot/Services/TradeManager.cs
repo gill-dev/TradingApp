@@ -58,9 +58,10 @@ public class TradeManager : BackgroundService
 
     private async Task MonitorAndCloseTrade(LivePrice price, CancellationToken stoppingToken)
     {
-        var settings = _tradeConfiguration.TradeSettings.First(x => x.Instrument == price.Instrument);
+        var isOpen = await _apiService.GetOpenTrades();
+        var current = isOpen.First(x => x.Instrument == price.Instrument);
 
-        var candles = await _apiService.GetCandles(settings.Instrument, settings.MainGranularity); 
+        var candles = await _apiService.GetCandles(current.Instrument, "M1"); 
         if (candles.Length < 9) return; 
 
         var ema9 = candles.Select(c => c.Mid_C).ToArray().CalcEma(9).Last();
