@@ -40,9 +40,9 @@
                     1 when shouldBuy &&
                            candles[i].Spread <= maxSpread &&
                            result[i].Gain >= minGain => Signal.Buy,
-                    //-1 when shouldSell &&
-                    //        candles[i].Spread <= maxSpread &&
-                    //        result[i].Gain >= minGain => Signal.Sell,
+                    -1 when shouldSell &&
+                            candles[i].Spread <= maxSpread &&
+                            result[i].Gain >= minGain => Signal.Sell,
                     _ => Signal.None
                 };
 

@@ -69,12 +69,33 @@ public class TradeManager : BackgroundService
             var ema9 = candles.Select(c => c.Mid_C).ToArray().CalcEma(9).Last();
             var lastCandle = candles.Last();
 
-            if (lastCandle.Mid_C < ema9)
+            if (current.InitialUnits > 0 && lastCandle.Mid_C < ema9)
             {
-                var closeSuccess = await _apiService.ClosePosition(price.Instrument);
+                var body = new
+                {
+                    longUnits = "ALL"
+                };
+                var closeSuccess = await _apiService.ClosePosition(price.Instrument, body);
                 if (closeSuccess)
                 {
                     _logger.LogInformation("Trade closed for {Instrument} at {Price} because price fell below 9 EMA", price.Instrument, lastCandle.Mid_C);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to close trade for {Instrument}", price.Instrument);
+                }
+            }
+
+            if (current.InitialUnits < 0 && lastCandle.Mid_C > ema9)
+            {
+                var body = new
+                {
+                    shortUnits = "ALL"
+                };
+                var closeSuccess = await _apiService.ClosePosition(price.Instrument, body);
+                if (closeSuccess)
+                {
+                    _logger.LogInformation("Trade closed for {Instrument} at {Price} because price was above 9 EMA", price.Instrument, lastCandle.Mid_C);
                 }
                 else
                 {
