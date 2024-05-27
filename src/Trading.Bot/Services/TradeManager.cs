@@ -59,26 +59,30 @@ public class TradeManager : BackgroundService
     private async Task MonitorAndCloseTrade(LivePrice price, CancellationToken stoppingToken)
     {
         var isOpen = await _apiService.GetOpenTrades();
-        var current = isOpen.First(x => x.Instrument == price.Instrument);
+        var current = isOpen.FirstOrDefault(x => x.Instrument == price.Instrument);
 
-        var candles = await _apiService.GetCandles(current.Instrument, "M1"); 
-        if (candles.Length < 9) return; 
-
-        var ema9 = candles.Select(c => c.Mid_C).ToArray().CalcEma(9).Last();
-        var lastCandle = candles.Last();
-
-        if (lastCandle.Mid_C < ema9)
+        if (current != null)
         {
-            var closeSuccess = await _apiService.ClosePosition(price.Instrument);
-            if (closeSuccess)
+            var candles = await _apiService.GetCandles(current.Instrument, "M1");
+            if (candles.Length < 9) return;
+
+            var ema9 = candles.Select(c => c.Mid_C).ToArray().CalcEma(9).Last();
+            var lastCandle = candles.Last();
+
+            if (lastCandle.Mid_C < ema9)
             {
-                _logger.LogInformation("Trade closed for {Instrument} at {Price} because price fell below 9 EMA", price.Instrument, lastCandle.Mid_C);
-            }
-            else
-            {
-                _logger.LogWarning("Failed to close trade for {Instrument}", price.Instrument);
+                var closeSuccess = await _apiService.ClosePosition(price.Instrument);
+                if (closeSuccess)
+                {
+                    _logger.LogInformation("Trade closed for {Instrument} at {Price} because price fell below 9 EMA", price.Instrument, lastCandle.Mid_C);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to close trade for {Instrument}", price.Instrument);
+                }
             }
         }
+   
     }
     private async Task DetectNewTrade(LivePrice price, CancellationToken stoppingToken)
     {
