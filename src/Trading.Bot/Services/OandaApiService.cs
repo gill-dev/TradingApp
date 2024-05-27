@@ -256,7 +256,7 @@ public class OandaApiService
     {
         var endpoint = $"accounts/{_accountId}/positions/{instrument}/close";
 
-        var response = await PutAsync<OrderFilledResponse>(endpoint, dataKey: "orderFillTransaction");
+        var response = await PutAsync<InstrumentResponse>(endpoint, dataKey: "orderFillTransaction");
 
         return response.StatusCode.IsSuccessStatusCode() && response.Value is not null;
     }
