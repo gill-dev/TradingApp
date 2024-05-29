@@ -44,7 +44,6 @@ public class TradeManager : BackgroundService
                     try
                     {
                         await DetectNewTrade(price, token);
-                        await MonitorAndCloseTrade(price, token);
                     }
                     catch (Exception ex)
                     {

@@ -36,4 +36,5 @@ public static partial class Indicator
 
         return result;
     }
+
 }

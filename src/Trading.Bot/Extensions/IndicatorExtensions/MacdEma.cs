@@ -10,7 +10,8 @@
             var prices = candles.Select(c => c.Mid_C).ToArray();
 
             var ema = prices.CalcEma(emaWindow).ToArray();
-            
+            var atr = candles.CalcAtr(14).Select(a => a.Atr).ToArray();
+
             var length = candles.Length;
             var result = new IndicatorResult[length];
 
@@ -46,8 +47,20 @@
                     _ => Signal.None
                 };
 
-                result[i].TakeProfit = candles[i].CalcTakeProfit(result[i], riskReward);
-                result[i].StopLoss = candles[i].CalcStopLoss(result[i]);
+                // Calculate ATR-based Take Profit
+                result[i].TakeProfit = direction switch
+                {
+                    1 when result[i].Signal == Signal.Buy => candles[i].Mid_C + (atr[i] * riskReward),
+                    -1 when result[i].Signal == Signal.Sell => candles[i].Mid_C - (atr[i] * riskReward),
+                    _ => 0.0
+                };
+                result[i].StopLoss = direction switch
+                {
+                    1 when result[i].Signal == Signal.Buy => candles[i].Mid_C - (atr[i] * riskReward),
+                    -1 when result[i].Signal == Signal.Sell => candles[i].Mid_C + (atr[i] * riskReward),
+                    _ => 0.0
+                };
+
                 result[i].Loss = Math.Abs(candles[i].Mid_C - result[i].StopLoss);
             }
 
