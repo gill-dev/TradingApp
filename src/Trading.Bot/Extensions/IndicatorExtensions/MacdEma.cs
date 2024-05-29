@@ -47,19 +47,9 @@
                     _ => Signal.None
                 };
 
-                // Calculate ATR-based Take Profit
-                result[i].TakeProfit = direction switch
-                {
-                    1 when result[i].Signal == Signal.Buy => candles[i].Mid_C + (atr[i] * riskReward),
-                    -1 when result[i].Signal == Signal.Sell => candles[i].Mid_C - (atr[i] * riskReward),
-                    _ => 0.0
-                };
-                result[i].StopLoss = direction switch
-                {
-                    1 when result[i].Signal == Signal.Buy => candles[i].Mid_C - (atr[i] * riskReward),
-                    -1 when result[i].Signal == Signal.Sell => candles[i].Mid_C + (atr[i] * riskReward),
-                    _ => 0.0
-                };
+                result[i].TakeProfit = candles[i].CalcTakeProfit(result[i], riskReward);
+
+                result[i].StopLoss = candles[i].CalcStopLoss(result[i]);
 
                 result[i].Loss = Math.Abs(candles[i].Mid_C - result[i].StopLoss);
             }
