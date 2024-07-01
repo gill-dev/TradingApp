@@ -120,8 +120,8 @@ public class TradeManager : BackgroundService
             return;
         }
 
-        var calcResult = candles.CalcTrendBreakout(settings.Integers[0], settings.Integers[1],
-            settings.Doubles[0], settings.MaxSpread, settings.MinGain, settings.RiskReward).Last();
+        var calcResult = candles.CalcMacdEma(settings.Integers[0], settings.Integers[1],
+            settings.Doubles[0], settings.MaxSpread, settings.MinGain, settings.MinVolume, settings.RiskReward).Last();
 
         if (calcResult.Signal != Signal.None && await SignalFollowsTrend(settings, calcResult.Signal))
         {

@@ -8,4 +8,6 @@ public abstract class IndicatorBase
     public double TakeProfit { get; set; }
     public double StopLoss { get; set; }
     public double Loss { get; set; }
+     public DateTime? EntryTime { get; set; }
+    public bool TimeExitDue { get; set; }
 }
