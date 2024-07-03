@@ -3,7 +3,7 @@
     public static partial class Indicator
     {
         public static IndicatorResult[] CalcMacdEma(this Candle[] candles, int bbWindow = 20, int emaWindow = 100,
-            double stdDev = 2, double maxSpread = 0.0004, double minGain = 0.0006, int minVolume = 100, double riskReward = 1.5, int atrPeriod = 14, double atrThreshold = 1.5)
+            double stdDev = 2, double maxSpread = 0.0004, double minGain = 0.0006, int minVolume = 100, double riskReward = 1.5, int atrPeriod = 10, double atrThreshold = 1)
         {
             var macd = candles.CalcMacd();
 
@@ -45,12 +45,12 @@
                         candles[i].Spread <= maxSpread &&
                         result[i].Gain >= minGain &&
                         candles[i].Volume >= minVolume &&
-                        isVolatile => Signal.Buy,
+                        (isVolatile || candles[i].Volume >= minVolume) => Signal.Buy,
                     -1 when shouldSell &&
                             candles[i].Spread <= maxSpread &&
                             result[i].Gain >= minGain &&
                             candles[i].Volume >= minVolume &&
-                            isVolatile => Signal.Sell,
+                            (isVolatile || candles[i].Volume >= minVolume) => Signal.Sell,
                     _ => Signal.None
                 };
 
