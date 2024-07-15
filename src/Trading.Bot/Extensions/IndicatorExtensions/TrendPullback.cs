@@ -11,7 +11,7 @@ public static partial class Indicator
 
         var bollingerBands = candles.CalcBollingerBands(bbWindow, stdDev);
 
-        var stochRsi = candles.CalcStochRsi(bbWindow, bbWindow);
+        var macd = candles.CalcMacd();
 
         var length = candles.Length;
 
@@ -27,10 +27,6 @@ public static partial class Indicator
 
         var higherHighs = false;
 
-        var higherLows = false;
-
-        var lowerHighs = false;
-
         var lowerLows = false;
 
         var latestHigh = candles[0].Mid_C;
@@ -45,44 +41,38 @@ public static partial class Indicator
 
             result[i].Gain = minGain;
 
-            var stochRising = i > 0 && stochRsi[i].KOscillator > stochRsi[i - 1].KOscillator && stochRsi[i].KOscillator > 10;
+            var rising = crossedLowerBand && macd[i].Histogram > macd[i - 1].Histogram;
 
-            var stochFalling = i > 0 && stochRsi[i].KOscillator < stochRsi[i - 1].KOscillator && stochRsi[i].KOscillator < 90;
+            var falling = crossedUpperBand && macd[i].Histogram < macd[i - 1].Histogram;
 
-            if (crossedLowerBand && stochRising)
+            if (crossedLowerBand && rising)
             {
                 var lastCrossedLowerBandCandle = candles[lastCrossedLowerBandIndex];
-
-                higherLows = lastCrossedLowerBandCandle.Mid_C > latestLow;
 
                 lowerLows = lastCrossedLowerBandCandle.Mid_C < latestLow;
 
                 latestLow = lastCrossedLowerBandCandle.Mid_C;
             }
 
-            if (crossedUpperBand && stochFalling)
+            if (crossedUpperBand && falling)
             {
                 var lastCrossedUpperBandCandle = candles[lastCrossedUpperBandIndex];
 
                 higherHighs = lastCrossedUpperBandCandle.Mid_C > latestHigh;
-
-                lowerHighs = lastCrossedUpperBandCandle.Mid_C < latestHigh;
 
                 latestHigh = lastCrossedUpperBandCandle.Mid_C;
             }
 
             result[i].Signal = i == 0 ? Signal.None : candles[i] switch
             {
-                var candle when crossedLowerBand && stochRising &&
-                                higherHighs && higherLows &&
-                                candle.Direction == 1 &&
-                                candle.Mid_L > emaResult[i] &&
+                var candle when crossedLowerBand && rising && higherHighs &&
+                                candle.Direction == 1 && !lowerLows &&
+                                bollingerBands[i].LowerBand > emaResult[i] &&
                                 candle.Spread <= maxSpread => Signal.Buy,
-                var candle when crossedUpperBand && stochFalling &&
-                                lowerHighs && lowerLows &&
-                                candle.Direction == -1 &&
-                                candle.Mid_H < emaResult[i] &&
-                                candle.Spread <= maxSpread => Signal.Sell,
+                //var candle when crossedUpperBand && falling && lowerLows &&
+                //                candle.Direction == -1 && !higherHighs &&
+                //                bollingerBands[i].UpperBand < emaResult[i] &&
+                //                candle.Spread <= maxSpread => Signal.Sell,
                 _ => Signal.None
             };
 
@@ -92,23 +82,23 @@ public static partial class Indicator
 
             result[i].Loss = Math.Abs(candles[i].Mid_C - result[i].StopLoss);
 
-            if (crossedLowerBand && stochRising && candles[i].Direction == 1)
+            if (crossedLowerBand && rising)
             {
                 crossedLowerBand = false;
             }
 
-            if (crossedUpperBand && stochFalling && candles[i].Direction == -1)
+            if (crossedUpperBand && falling)
             {
                 crossedUpperBand = false;
             }
 
-            if (candles[i].Mid_C < bollingerBands[i].LowerBand && stochRsi[i].KOscillator < 10)
+            if (candles[i].Mid_C < bollingerBands[i].LowerBand)
             {
                 crossedLowerBand = true;
                 lastCrossedLowerBandIndex = i;
             }
 
-            if (candles[i].Mid_C > bollingerBands[i].UpperBand && stochRsi[i].KOscillator > 90)
+            if (candles[i].Mid_C > bollingerBands[i].UpperBand)
             {
                 crossedUpperBand = true;
                 lastCrossedUpperBandIndex = i;

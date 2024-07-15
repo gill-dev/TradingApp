@@ -54,56 +54,6 @@ public class TradeManager : BackgroundService
             await Task.Delay(5, stoppingToken);
         }
     }
-
-    private async Task MonitorAndCloseTrade(LivePrice price, CancellationToken stoppingToken)
-    {
-        var isOpen = await _apiService.GetOpenTrades();
-        var current = isOpen.FirstOrDefault(x => x.Instrument == price.Instrument);
-
-        if (current != null)
-        {
-            var candles = await _apiService.GetCandles(current.Instrument, "M1");
-            if (candles.Length < 9) return;
-
-            var ema9 = candles.Select(c => c.Mid_C).ToArray().CalcEma(9).Last();
-            var lastCandle = candles.Last();
-
-            if (current.InitialUnits > 0 && lastCandle.Mid_C < ema9)
-            {
-                var body = new
-                {
-                    longUnits = "ALL"
-                };
-                var closeSuccess = await _apiService.ClosePosition(price.Instrument, body);
-                if (closeSuccess)
-                {
-                    _logger.LogInformation("Trade closed for {Instrument} at {Price} because price fell below 9 EMA", price.Instrument, lastCandle.Mid_C);
-                }
-                else
-                {
-                    _logger.LogWarning("Failed to close trade for {Instrument}", price.Instrument);
-                }
-            }
-
-            if (current.InitialUnits < 0 && lastCandle.Mid_C > ema9)
-            {
-                var body = new
-                {
-                    shortUnits = "ALL"
-                };
-                var closeSuccess = await _apiService.ClosePosition(price.Instrument, body);
-                if (closeSuccess)
-                {
-                    _logger.LogInformation("Trade closed for {Instrument} at {Price} because price was above 9 EMA", price.Instrument, lastCandle.Mid_C);
-                }
-                else
-                {
-                    _logger.LogWarning("Failed to close trade for {Instrument}", price.Instrument);
-                }
-            }
-        }
-   
-    }
     private async Task DetectNewTrade(LivePrice price, CancellationToken stoppingToken)
     {
         var settings = _tradeConfiguration.TradeSettings.First(x => x.Instrument == price.Instrument);
@@ -120,7 +70,9 @@ public class TradeManager : BackgroundService
             return;
         }
 
-        var calcResult = candles.CalcMacdEma(settings.Integers[0], settings.Integers[1],
+        if(settings.Instrument == "USD_JPY")
+        {
+            var calcResult = candles.CalcMacdEma(settings.Integers[0], settings.Integers[1],
             settings.Doubles[0], settings.MaxSpread, settings.MinGain, settings.MinVolume, settings.RiskReward).Last();
 
         if (calcResult.Signal != Signal.None && await SignalFollowsTrend(settings, calcResult.Signal))
@@ -128,6 +80,24 @@ public class TradeManager : BackgroundService
             await TryPlaceTrade(settings, calcResult);
             return;
         }
+        
+        }
+
+        if(settings.Instrument == "GBP_USD")
+        {
+           
+            var calcResult = candles.CalcTrendPullback(settings.Integers[0], settings.Integers[1],
+            settings.Doubles[0], settings.MaxSpread, settings.MinGain, settings.RiskReward).Last();
+        
+        if (calcResult.Signal != Signal.None && await SignalFollowsTrend(settings, calcResult.Signal))
+        {
+            await TryPlaceTrade(settings, calcResult);
+            return;
+        }
+
+        }
+
+
 
         _logger.LogInformation("Not placing a trade for {Instrument} based on the indicator", settings.Instrument);
     }
