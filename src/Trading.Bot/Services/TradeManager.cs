@@ -94,7 +94,7 @@ public class TradeManager : BackgroundService
             await TryPlaceTrade(settings, calcResult);
             return;
         }
-
+        }
 
 
 
