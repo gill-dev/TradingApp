@@ -70,7 +70,7 @@ public class TradeManager : BackgroundService
             return;
         }
 
-        if(settings.Instrument == "USD_JPY")
+        if(settings.Instrument == "GBP_USD")
         {
             var calcResult = candles.CalcMacdEma(settings.Integers[0], settings.Integers[1],
             settings.Doubles[0], settings.MaxSpread, settings.MinGain, settings.MinVolume, settings.RiskReward).Last();
@@ -83,7 +83,7 @@ public class TradeManager : BackgroundService
         
         }
 
-        if(settings.Instrument == "GBP_USD")
+        if(settings.Instrument == "USD_JPY")
         {
            
             var calcResult = candles.CalcTrendPullback(settings.Integers[0], settings.Integers[1],
@@ -95,7 +95,7 @@ public class TradeManager : BackgroundService
             return;
         }
 
-        }
+
 
 
 
