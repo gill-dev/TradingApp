@@ -39,16 +39,6 @@ public static class MiscellaneousExtensions
             _ => 0.0
         };
     }
-    public static double CalcEMATakeProfit(this Candle candle, IndicatorBase result, double ema)
-    {
-        return result.Signal switch
-        {
-            Signal.Buy => ema, // Take profit at the EMA 200 for buy signal
-            Signal.Sell => ema, // Take profit at the EMA 200 for sell signal
-            _ => 0.0
-        };
-    }
-
 
     public static double CalcStopLoss(this Candle candle, IndicatorBase result)
     {

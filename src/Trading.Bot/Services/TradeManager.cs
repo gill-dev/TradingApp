@@ -51,53 +51,35 @@ public class TradeManager : BackgroundService
                     }
                 });
 
-            await Task.Delay(5, stoppingToken);
+            await Task.Delay(10, stoppingToken);
         }
     }
+
     private async Task DetectNewTrade(LivePrice price, CancellationToken stoppingToken)
     {
         var settings = _tradeConfiguration.TradeSettings.First(x => x.Instrument == price.Instrument);
 
-        if (!await NewCandleAvailable(settings, price, stoppingToken)) return;
+        if (!await NewCandleAvailable(settings, price, stoppingToken) || !GoodTradingTime()) return;
 
         _logger.LogInformation("New candle found for {Instrument} at {Time}", price.Instrument, price.Time);
 
         var candles = await _apiService.GetCandles(settings.Instrument, settings.MainGranularity);
 
-        if (!candles.Any() || !GoodTradingTime())
+        if (!candles.Any())
         {
-            _logger.LogInformation("Not placing a trade for {Instrument}, candles not found or not a good time to trade.", settings.Instrument);
+            _logger.LogInformation(
+                "Not placing a trade for {Instrument}, candles not found", settings.Instrument);
             return;
         }
 
-        if(settings.Instrument == "GBP_USD")
-        {
-            var calcResult = candles.CalcMacdEma(settings.Integers[0], settings.Integers[1],
-            settings.Doubles[0], settings.MaxSpread, settings.MinGain, settings.MinVolume, settings.RiskReward).Last();
+        var calcResult = candles.CalcMeanReversion(settings.Integers[0], settings.Doubles[0],
+            settings.MaxSpread, settings.MinGain, settings.RiskReward).Last();
 
         if (calcResult.Signal != Signal.None && await SignalFollowsTrend(settings, calcResult.Signal))
         {
             await TryPlaceTrade(settings, calcResult);
             return;
         }
-        
-        }
-
-        if(settings.Instrument == "USD_JPY")
-        {
-           
-            var calcResult = candles.CalcTrendPullback(settings.Integers[0], settings.Integers[1],
-            settings.Doubles[0], settings.MaxSpread, settings.MinGain, settings.RiskReward).Last();
-        
-        if (calcResult.Signal != Signal.None && await SignalFollowsTrend(settings, calcResult.Signal))
-        {
-            await TryPlaceTrade(settings, calcResult);
-            return;
-        }
-        }
-
-
-
 
         _logger.LogInformation("Not placing a trade for {Instrument} based on the indicator", settings.Instrument);
     }
@@ -114,20 +96,19 @@ public class TradeManager : BackgroundService
 
         return signal == higherTrend && signal == lowerTrend;
     }
+
     private static bool GoodTradingTime()
     {
         var date = DateTime.UtcNow;
 
-        if (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) return false;
-
-        return date.Hour is <= 18 and >= 8;
+        return date.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday);
     }
 
     private async Task<bool> NewCandleAvailable(TradeSettings settings, LivePrice price, CancellationToken stoppingToken)
     {
         var retryCount = 0;
 
-    Start:
+        Start:
 
         if (retryCount >= 10)
         {
@@ -186,22 +167,11 @@ public class TradeManager : BackgroundService
             Signal = indicator.Signal.ToString(),
             ofResponse.TradeOpened.Units,
             ofResponse.TradeOpened.Price,
-            indicator.Gain,
             TakeProfit = order.TakeProfitOnFill?.Price ?? 0,
             StopLoss = order.StopLossOnFill?.Price ?? 0,
             TrailingStop = order.TrailingStopLossOnFill?.Distance ?? 0
         });
     }
-
-    // private static double CalcTrailingStop(IndicatorBase indicator, double riskReward)
-    // {
-    //     return indicator.Signal switch
-    //     {
-    //         Signal.Buy => (indicator.Candle.Ask_C - indicator.StopLoss) * riskReward,
-    //         Signal.Sell => (indicator.StopLoss - indicator.Candle.Bid_C) * riskReward,
-    //         _ => 0
-    //     };
-    // }
 
     private static double CalcTrailingStop(IndicatorBase indicator)
     {

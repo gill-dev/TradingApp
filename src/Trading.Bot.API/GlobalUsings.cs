@@ -1,4 +1,6 @@
 ﻿global using MediatR;
+global using Microsoft.AspNetCore.Http.Features;
+global using Microsoft.AspNetCore.Server.Kestrel.Core;
 global using System.Collections.Concurrent;
 global using Trading.Bot.API.Endpoints;
 global using Trading.Bot.API.Extensions;
