@@ -61,8 +61,6 @@ public class TradeManager : BackgroundService
 
         if (!await NewCandleAvailable(settings, price, stoppingToken) || !GoodTradingTime()) return;
 
-        _logger.LogInformation("New candle found for {Instrument} at {Time}", price.Instrument, price.Time);
-
         var candles = await _apiService.GetCandles(settings.Instrument, settings.MainGranularity);
 
         if (!candles.Any())
@@ -72,8 +70,8 @@ public class TradeManager : BackgroundService
             return;
         }
 
-        var calcResult = candles.CalcMeanReversion(settings.Integers[0], settings.Doubles[0],
-            settings.MaxSpread, settings.MinGain, settings.RiskReward).Last();
+        var calcResult = candles.CalcMeanReversion(settings.Integers[0], settings.Doubles[0], settings.Doubles[1],
+            settings.Doubles[2], settings.MaxSpread, settings.MinGain, settings.RiskReward).Last();
 
         if (calcResult.Signal != Signal.None && await SignalFollowsTrend(settings, calcResult.Signal))
         {
@@ -86,15 +84,16 @@ public class TradeManager : BackgroundService
 
     private async Task<bool> SignalFollowsTrend(TradeSettings settings, Signal signal)
     {
-        var hgCandles = await _apiService.GetCandles(settings.Instrument, settings.HigherGranularity);
 
-        var lgCandles = await _apiService.GetCandles(settings.Instrument, settings.LowerGranularity);
+        var tasks = settings.OtherGranularities.Select(granularity =>
+            _apiService.GetCandles(settings.Instrument, granularity));
 
-        var higherTrend = hgCandles.CalcEmaTrend(settings.Integers[1]).Last();
+        var results = await Task.WhenAll(tasks);
 
-        var lowerTrend = lgCandles.CalcEmaTrend(settings.Integers[1]).Last();
+        var signals = results.Select(candles =>
+            candles.CalcEmaTrend(settings.Integers[1]).Last());
 
-        return signal == higherTrend && signal == lowerTrend;
+        return signals.All(s => s == signal);
     }
 
     private static bool GoodTradingTime()
@@ -182,7 +181,7 @@ public class TradeManager : BackgroundService
     {
         await _emailService.SendMailAsync(new EmailData
         {
-            EmailToAddress = "gillwolmarans@gmail.com",
+            EmailToAddress = "gill.wolmarans@gmail.com",
             EmailToName = "Gill",
             EmailSubject = "New Trade",
             EmailBody = JsonSerializer.Serialize(emailBody, new JsonSerializerOptions
