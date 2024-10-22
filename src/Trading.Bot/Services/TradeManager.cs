@@ -82,21 +82,19 @@ public class TradeManager : BackgroundService
         _logger.LogInformation("Not placing a trade for {Instrument} based on the indicator", settings.Instrument);
     }
 
-public async Task<bool> SignalFollowsTrend(TradeSettings settings, Signal signal)
-{
-    var tasks = settings.OtherGranularities.Select(granularity =>
-        _apiService.GetCandles(settings.Instrument, granularity));
-        
-    var results = await Task.WhenAll(tasks);
-    
-    // Check both trend direction and strength
-    var signals = results.Select(candles => 
-        (Signal: candles.CalcEmaTrend(settings.Integers[0], settings.Integers[1]).Last(),
-         IsStrong: candles.IsTrendStrong(signal)));
-    
-    // Only confirm if all timeframes show strong trend in the same direction
-    return signals.All(s => s.Signal == signal && s.IsStrong);
-}
+    private async Task<bool> SignalFollowsTrend(TradeSettings settings, Signal signal)
+    {
+
+        var tasks = settings.OtherGranularities.Select(granularity =>
+            _apiService.GetCandles(settings.Instrument, granularity));
+
+        var results = await Task.WhenAll(tasks);
+
+        var signals = results.Select(candles =>
+            candles.CalcEmaTrend(settings.Integers[1]).Last());
+
+        return signals.All(s => s == signal);
+    }
 
     private static bool GoodTradingTime()
     {

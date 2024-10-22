@@ -2,34 +2,45 @@
 
 public static partial class Indicator
 {
-    public static Signal[] CalcEmaTrend(this Candle[] candles, int shortEma = 50, int longEma = 200)
-    {
-        var prices = candles.Select(c => c.Mid_C).ToArray();
-        var shortEmaResult = prices.CalcEma(shortEma).ToArray();
-        var longEmaResult = prices.CalcEma(longEma).ToArray();
-        
-        var length = candles.Length;
-        var result = new Signal[length];
-        
-        for (var i = 0; i < length; i++)
-        {
-            // Check both EMA cross and price position
-            if (shortEmaResult[i] > longEmaResult[i] && candles[i].Mid_C > shortEmaResult[i])
-            {
-                result[i] = Signal.Buy;
-            }
-            else if (shortEmaResult[i] < longEmaResult[i] && candles[i].Mid_C < shortEmaResult[i])
-            {
-                result[i] = Signal.Sell;
-            }
-            else
-            {
-                result[i] = Signal.None;
-            }
-        }
-        
-        return result;
-    }
-}
+public static Signal[] CalcEmaTrend(this Candle[] candles, int fastEma = 50, int slowEma = 200)
+{
+    var prices = candles.Select(c => c.Mid_C).ToArray();
+    var fastEmaResult = prices.CalcEma(fastEma).ToArray();
+    var slowEmaResult = prices.CalcEma(slowEma).ToArray();
+    var length = candles.Length;
+    var result = new Signal[length];
 
-   
+    for (var i = 0; i < length; i++)
+    {
+        if (i < slowEma)
+        {
+            result[i] = Signal.None;
+            continue;
+        }
+
+        // Check EMA cross trend
+        bool isBullishTrend = fastEmaResult[i] > slowEmaResult[i];
+        bool isStrongTrend = Math.Abs(fastEmaResult[i] - slowEmaResult[i]) > 
+            (prices[i] * 0.0001);
+
+        // Price position relative to EMAs
+        bool priceAboveEmas = candles[i].Mid_L > Math.Max(fastEmaResult[i], slowEmaResult[i]);
+        bool priceBelowEmas = candles[i].Mid_H < Math.Min(fastEmaResult[i], slowEmaResult[i]);
+
+        if (isBullishTrend && isStrongTrend && priceAboveEmas)
+        {
+            result[i] = Signal.Buy;
+        }
+        else if (!isBullishTrend && isStrongTrend && priceBelowEmas)
+        {
+            result[i] = Signal.Sell;
+        }
+        else
+        {
+            result[i] = Signal.None;
+        }
+    }
+
+    return result;
+}
+}

@@ -3,7 +3,7 @@
 public static partial class Indicator
 {
     public static IndicatorResult[] CalcMeanReversion(this Candle[] candles, int window = 20, double stdDev = 2,
-        double rsiLower = 30, double rsiUpper = 70, double maxSpread = 0.0004, double minGain = 0.0006, double riskReward = 1.5)
+        double rsiLower = 30, double rsiUpper = 70, double maxSpread = 0.0004, double minGain = 0.00015, double riskReward = 1.5)
     {
         var bollingerBands = candles.CalcBollingerBands(window, stdDev);
 
