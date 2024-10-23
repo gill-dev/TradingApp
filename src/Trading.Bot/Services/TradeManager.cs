@@ -1,4 +1,4 @@
-﻿namespace Trading.Bot.Services;
+namespace Trading.Bot.Services;
 
 public class TradeManager : BackgroundService
 {
